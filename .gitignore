@@ -93,5 +93,5 @@ doc/_dvlpt/
 
 # user custom filters
 
-# Notebook
-.ipynb_checkpoints/
+# Mac
+.DS_Store
