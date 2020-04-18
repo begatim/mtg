@@ -52,7 +52,7 @@ def get_expr(s, expr):
     return _str
 
 def get_label(s):
-    name = r'[a-zA-Z0-9]+'
+    name = r'[a-zA-Z0-9\.]+'
     return get_expr(s, name)
 
 def get_name(s):
@@ -60,7 +60,7 @@ def get_name(s):
     return get_expr(s, name)
 
 def get_index(s):
-    name = r'[0-9]+'
+    name = r'[0-9\.]+'
     return get_expr(s, name)
 
 def get_args(s):
@@ -234,7 +234,7 @@ def multiscale_edit(s, symbol_at_scale = {}, class_type={}, has_date = False, mt
             scale = mtg.scale(vid)
         elif tag == '*':
             args = get_properties(name, vid=vid, time=True)
-            print vid, '*(', args, ')'
+            print(vid, '*(', args, ')')
             # CPL Manage Dynamic_MTG
             add_dynamic_properties(mtg, vid, args)
         else:
@@ -252,7 +252,7 @@ def multiscale_edit(s, symbol_at_scale = {}, class_type={}, has_date = False, mt
                 try:
                     new_scale = symbol_at_scale[symbol_class]
                 except:
-                    print 'NODE ',node, bool(tag=='*')
+                    print('NODE ',node, bool(tag=='*'))
                 if tag == '/' and new_scale <= scale:
                     new_scale -= 1
                     pending_edge = '/'
@@ -260,15 +260,38 @@ def multiscale_edit(s, symbol_at_scale = {}, class_type={}, has_date = False, mt
                     scale -= 1
                     current_vertex = mtg.complex(current_vertex)
 
+
             if tag in ['+', '<']:
                 if mtg.scale(vid) == scale:
                     vid = mtg.add_child(vid, edge_type=tag, **args)
                     current_vertex = vid
                     pending_edge = ''
                 else:
-                    complex = mtg.complex(current_vertex)
-                    current_vertex = mtg.add_component(complex, **args)
-                    pending_edge = tag
+                    # current_vertex is the anchor vertex
+                    # at the same scale of self.
+                    _complex = mtg.complex(current_vertex)
+                    _current_vertex = mtg.add_component(_complex, **args)
+                    _current_vertex = mtg.add_child(
+                        parent=current_vertex,
+                        child=_current_vertex,
+                        edge_type=tag, 
+                        **args
+                    )
+                    # How to know that we have to update vid with current_vertex?
+                    # vid is at lowest scale. 
+                    # if the complex at scale of vid is not current_vertex, 
+                    # then elements have been added at other scales without full decomposition.
+                    # vid has to be updated : no link exist at the lowest scale
+                    cvid = mtg.complex_at_scale(vid, scale=mtg.scale(current_vertex))
+                    if (cvid!=current_vertex):
+                        # the previous vertex was not at the lowest scale
+                        # We then reinit the current vid
+                        vid = _current_vertex
+                        pending_edge = ''
+                    else:
+                        pending_edge = tag
+                    current_vertex = _current_vertex 
+
             elif tag == '<<':
                 index = args['index']
                 label = args['label']
@@ -294,7 +317,6 @@ def multiscale_edit(s, symbol_at_scale = {}, class_type={}, has_date = False, mt
                         vid = mtg.add_child(vid,
                                             child=component,
                                             edge_type=pending_edge)
-                        assert vid == component
                         current_vertex = vid
                     else:
                         current_vertex = component

@@ -1313,7 +1313,7 @@ class MTG(PropertyTree):
         The label thus provides general information about a vertex and
         enables us to encode the plant components.
         """
-        pattern = r'[0-9]+$'
+        pattern = r'[0-9\.]+$'
         label = self.property('label').get(vid)
         if not label:
             return vid

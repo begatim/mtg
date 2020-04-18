@@ -21,7 +21,10 @@ from glob import glob
 from openalea.mtg import *
 from openalea.mtg.io import *
 
-from openalea import aml
+try:
+    from openalea.aml import MTG as aml_MTG
+except ImportError:
+    aml_MTG = MTG
 
 def test():
     files = glob('data/*.mtg')
@@ -59,7 +62,7 @@ def check(g, s, fn):
     f.write(s)
     f.close()
     try:
-        g1 = aml.MTG('tmp.mtg')
+        g1 = aml_MTG('tmp.mtg')
     except Exception, e:
         os.remove('tmp.mtg')
         assert False, fn
